@@ -2,10 +2,6 @@ import databases
 from pydantic.v1 import BaseSettings
 from starlette.config import Config
 
-config = Config(".env")
-
-TESTING_DATAbASE = config('TESTING', cast=bool, default=True)
-
 
 class RedisSettings(BaseSettings):
     redis_host: str = "localhost"
@@ -16,8 +12,20 @@ class RedisSettings(BaseSettings):
         env_file = ".env"
 
 
+class PostgresqlSettings(BaseSettings):
+    database_url: str = 'postgresql+psycopg2://postgres:postgres@0.0.0.0:5434/mydb'
+
+    class Config:
+        env_file = ".env"
+
+
+postgresql_settings = PostgresqlSettings()
 redis_settings = RedisSettings()
 
+
+config = Config(".env")
+
+TESTING_DATAbASE = config('TESTING', cast=bool, default=True)
 
 OTP_EX_TIME = config('OTP_EX_TIME', cast=int, default=300)
 OTP_LEN = config('OTP_LEN', cast=int, default=4)

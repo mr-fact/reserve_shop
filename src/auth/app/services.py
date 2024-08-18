@@ -1,8 +1,11 @@
 import random
-from datetime import datetime
 
+from sqlalchemy.orm import Session
+
+from db import crud
 from db.redis import get_redis
 from db.settings import OTP_LEN, OTP_EX_TIME, OTP_FAILED_TIMES
+from schemas import UserBase
 
 
 def send_otp(phone: str) -> str:
@@ -39,3 +42,15 @@ def login_user(phone: str) -> dict:
         'access': 'access token',
         'refresh': 'refresh token',
     }
+
+
+def get_user(phone: str, db: Session) -> UserBase:
+    user = crud.get_user(phone=phone, db=db)
+    return user
+
+
+def get_or_create_user(phone: str, db: Session) -> UserBase:
+    user = get_user(phone=phone, db=db)
+    if not user:
+        user = crud.create_user(phone=phone, db=db)
+    return user

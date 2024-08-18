@@ -6,3 +6,5 @@ starlette==0.38.2
 alembic==1.13.2
 pydantic==2.8.2
 redis==5.0.8
+psycopg2-binary==2.9.9
+
