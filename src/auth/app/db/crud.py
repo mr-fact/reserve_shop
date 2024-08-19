@@ -10,6 +10,10 @@ def get_user(phone: str, db: Session) -> UserBase:
     return db.query(models.User).filter(models.User.phone == phone).first()
 
 
+def get_user_by_id(user_id: int, db: Session) -> UserBase:
+    return db.query(models.User).filter(models.User.id == user_id).first()
+
+
 def create_user(phone: str, db: Session):
     user = models.User(phone=phone)
     db.add(user)

@@ -1,11 +1,17 @@
 import random
+import uuid
+from datetime import datetime, timedelta
+from typing import Optional
 
+import jwt
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from db import crud
 from db.redis import get_redis
 from db.settings import OTP_LEN, OTP_EX_TIME, OTP_FAILED_TIMES
 from schemas import UserBase
+from settings import JWT_ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, JWT_ALGORITHM, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY
 
 
 def send_otp(phone: str) -> str:
@@ -49,8 +55,40 @@ def get_user(phone: str, db: Session) -> UserBase:
     return user
 
 
+def get_user_by_id(user_id: int, db: Session) -> UserBase:
+    user = crud.get_user_by_id(user_id=user_id, db=db)
+    return user
+
+
 def get_or_create_user(phone: str, db: Session) -> UserBase:
     user = get_user(phone=phone, db=db)
     if not user:
         user = crud.create_user(phone=phone, db=db)
+    return user
+
+
+def create_access_token(user_id: int, expires_delta: Optional[timedelta] = None) -> str:
+    if expires_delta:
+        expire = datetime.now() + expires_delta
+    else:
+        expire = datetime.now() + timedelta(minutes=JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode = {
+        'token_type': 'access',
+        'exp': int(expire.timestamp()),
+        'iat': int(datetime.now().timestamp()),
+        'jti': str(uuid.uuid4()),
+        'user_id': str(user_id),
+    }
+    encoded_jwt = jwt.encode(to_encode, JWT_PRIVATE_KEY, algorithm=JWT_ALGORITHM)
+    return encoded_jwt
+
+
+def verify_access_token(token: str, db: Session) -> UserBase:
+    try:
+        payload = jwt.decode(token, JWT_PUBLIC_KEY, algorithms=JWT_ALGORITHM)
+        print(payload)
+    except jwt.exceptions.ExpiredSignatureError:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail='Token expired!!!!!')
+    user_id: int = payload.get("user_id")
+    user = get_user_by_id(user_id, db)
     return user

@@ -1,15 +1,34 @@
 import fastapi
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi.security import APIKeyHeader
 from sqlalchemy.orm import Session
 
 import services
 from db.postgresql import get_db
-from schemas import SendOTPInput, VerifyOTPInput, UserOutput
+from schemas import SendOTPInput, VerifyOTPInput, UserBase
 
 # from customers.routers import users_router
 
 
 router = APIRouter()
+header_scheme = APIKeyHeader(name="Authorization")
+
+
+def get_current_user_by_token(token: str = Depends(header_scheme), db: Session = Depends(get_db)):
+    token_data = services.verify_access_token(token, db)
+    if not token_data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"Authorization": "Bearer"},
+        )
+
+    # Fetch the user from the database using the decoded username
+    user = services.get_user_by_id(user_id=token_data.id, db=db)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    return user
 
 
 @router.post('/send-otp/')
@@ -23,9 +42,20 @@ def verify_otp_api(data: VerifyOTPInput, db: Session = Depends(get_db)):
     result, message = services.verify_otp(data.phone, data.otp_code)
     if result:
         user = services.get_or_create_user(phone=data.phone, db=db)
-        return {'result': result, 'message': message, 'user': user}
+        token = services.create_access_token(user.id)
+        return {
+            'result': result,
+            'message': message,
+            'user': user,
+            'token': token
+        }
     else:
         raise HTTPException(status_code=fastapi.status.HTTP_401_UNAUTHORIZED, detail=message)
+
+
+@router.get('/user/me/')
+def get_user_information(user: UserBase = Depends(get_current_user_by_token)):
+    return user
 
 
 @router.get('/user/{phone}/')
