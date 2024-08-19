@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from db import crud
 from db.redis import get_redis
 from db.settings import OTP_LEN, OTP_EX_TIME, OTP_FAILED_TIMES
-from schemas import UserBase
+from schemas import UserBase, UserUpdateInput
 from settings import JWT_ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, JWT_ALGORITHM, JWT_PRIVATE_KEY, JWT_PUBLIC_KEY
 
 
@@ -60,6 +60,10 @@ def get_user_by_id(user_id: int, db: Session) -> UserBase:
     return user
 
 
+def update_user_by_id(user_id: int, user_info: UserUpdateInput, db: Session) -> UserBase:
+    return crud.update_user_by_id(user_id, user_info, db)
+
+
 def get_or_create_user(phone: str, db: Session) -> UserBase:
     user = get_user(phone=phone, db=db)
     if not user:
@@ -86,7 +90,6 @@ def create_access_token(user_id: int, expires_delta: Optional[timedelta] = None)
 def verify_access_token(token: str, db: Session) -> UserBase:
     try:
         payload = jwt.decode(token, JWT_PUBLIC_KEY, algorithms=JWT_ALGORITHM)
-        print(payload)
     except jwt.exceptions.ExpiredSignatureError:
         raise HTTPException(status.HTTP_403_FORBIDDEN, detail='Token expired!!!!!')
     user_id: int = payload.get("user_id")

@@ -1,11 +1,11 @@
 import fastapi
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import APIKeyHeader
 from sqlalchemy.orm import Session
 
 import services
 from db.postgresql import get_db
-from schemas import SendOTPInput, VerifyOTPInput, UserBase
+from schemas import SendOTPInput, VerifyOTPInput, UserBase, UserUpdateInput, UserOutput
 
 # from customers.routers import users_router
 
@@ -53,9 +53,15 @@ def verify_otp_api(data: VerifyOTPInput, db: Session = Depends(get_db)):
         raise HTTPException(status_code=fastapi.status.HTTP_401_UNAUTHORIZED, detail=message)
 
 
-@router.get('/user/me/')
+@router.get('/user/me/', response_model=UserOutput)
 def get_user_information(user: UserBase = Depends(get_current_user_by_token)):
     return user
+
+
+@router.patch('/user/me/', response_model=UserOutput)
+def update_user_information(user_info: UserUpdateInput, user: UserBase = Depends(get_current_user_by_token),
+                            db: Session = Depends(get_db)):
+    return services.update_user_by_id(user.id, user_info, db)
 
 
 @router.get('/user/{phone}/')

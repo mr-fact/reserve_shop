@@ -1,4 +1,6 @@
-from pydantic import BaseModel, constr
+from typing import Optional
+
+from pydantic import BaseModel, constr, EmailStr
 
 
 class SendOTPInput(BaseModel):
@@ -19,5 +21,18 @@ class UserCreate(UserBase):
     email: str
 
 
-class UserOutput(UserBase):
+class UserOutput(BaseModel):
+    id: int
+    phone: str
     name: str
+    email: str
+    is_active: bool
+    is_admin: bool
+
+
+class UserUpdateInput(BaseModel):
+    name: Optional[constr(max_length=20)] = None
+    email: Optional[EmailStr] = None
+
+    class Config:
+        orm_mode = True
