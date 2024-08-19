@@ -1,0 +1,32 @@
+
+services:
+  redis-cache:
+    image: redis
+    hostname: reserve-shop-redis-cache
+    container_name: reserve-shop-redis-cache
+    restart: always
+    ports:
+      - '6380:6379'
+    command: redis-server
+    volumes:
+      - cache:/data
+
+  db_postgres:
+    image: postgres
+    hostname: reserve-shop-postgres
+    container_name: reserve-shop-postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - db-postgres:/var/lib/postgresql/data
+
+volumes:
+  db-postgres:
+    driver: local
+
+  cache:
+    driver: local
