@@ -33,6 +33,7 @@ def get_current_user_by_token(token: str = Depends(header_scheme), db: Session =
 
 @router.post('/send-otp/')
 def send_otp_api(data: SendOTPInput):
+    print(data.phone)
     otp = services.send_otp(data.phone)
     return {'data': data, 'otp': otp}
 
